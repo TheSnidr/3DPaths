@@ -1,0 +1,56 @@
+{
+  "resources": [
+    {"id":{"name":"path3D","path":"scripts/path3D/path3D.yy",},"order":1,},
+    {"id":{"name":"texSky","path":"sprites/texSky/texSky.yy",},"order":2,},
+    {"id":{"name":"texMineTrack","path":"sprites/texMineTrack/texMineTrack.yy",},"order":3,},
+    {"id":{"name":"texMinecart","path":"sprites/texMinecart/texMinecart.yy",},"order":1,},
+    {"id":{"name":"loadObj","path":"scripts/loadObj/loadObj.yy",},"order":0,},
+    {"id":{"name":"objPath","path":"objects/objPath/objPath.yy",},"order":2,},
+    {"id":{"name":"Room1","path":"rooms/Room1/Room1.yy",},"order":3,},
+    {"id":{"name":"texGrass","path":"sprites/texGrass/texGrass.yy",},"order":0,},
+    {"id":{"name":"matrix_orthonormalize_to","path":"scripts/matrix_orthonormalize_to/matrix_orthonormalize_to.yy",},"order":2,},
+    {"id":{"name":"Path1","path":"paths/Path1/Path1.yy",},"order":1,},
+  ],
+  "Options": [
+    {"name":"Amazon Fire","path":"options/amazonfire/options_amazonfire.yy",},
+    {"name":"Android","path":"options/android/options_android.yy",},
+    {"name":"HTML5","path":"options/html5/options_html5.yy",},
+    {"name":"iOS","path":"options/ios/options_ios.yy",},
+    {"name":"Linux","path":"options/linux/options_linux.yy",},
+    {"name":"macOS","path":"options/mac/options_mac.yy",},
+    {"name":"Main","path":"options/main/options_main.yy",},
+    {"name":"tvOS","path":"options/tvos/options_tvos.yy",},
+    {"name":"Windows","path":"options/windows/options_windows.yy",},
+  ],
+  "isDnDProject": false,
+  "isEcma": false,
+  "tutorialPath": "",
+  "configs": {
+    "name": "Default",
+    "children": [],
+  },
+  "RoomOrderNodes": [
+    {"roomId":{"name":"Room1","path":"rooms/Room1/Room1.yy",},},
+  ],
+  "Folders": [
+    {"folderPath":"folders/Textures.yy","order":9,"resourceVersion":"1.0","name":"Textures","tags":[],"resourceType":"GMFolder",},
+    {"folderPath":"folders/Scripts.yy","order":10,"resourceVersion":"1.0","name":"Scripts","tags":[],"resourceType":"GMFolder",},
+  ],
+  "AudioGroups": [
+    {"targets":-1,"resourceVersion":"1.3","name":"audiogroup_default","resourceType":"GMAudioGroup",},
+  ],
+  "TextureGroups": [
+    {"isScaled":true,"autocrop":true,"border":2,"mipsToGenerate":0,"groupParent":null,"targets":-1,"resourceVersion":"1.3","name":"Default","resourceType":"GMTextureGroup",},
+  ],
+  "IncludedFiles": [
+    {"CopyToMask":-1,"filePath":"datafiles","resourceVersion":"1.0","name":"Minecart.obj","resourceType":"GMIncludedFile",},
+    {"CopyToMask":-1,"filePath":"datafiles","resourceVersion":"1.0","name":"Sphere.obj","resourceType":"GMIncludedFile",},
+  ],
+  "MetaData": {
+    "IDEVersion": "2.3.2.560",
+  },
+  "resourceVersion": "1.4",
+  "name": "3DPaths",
+  "tags": [],
+  "resourceType": "GMProject",
+}
