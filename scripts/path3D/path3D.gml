@@ -127,7 +127,7 @@ function path3D() constructor
 		
 		static getPos = function(t)
 		{
-			t = (t * parent.length - pos) / length;
+			t = (t - pos) / length;
 			if (t < 0){return -1;}
 			if (t > 1){return 1;}
 			
@@ -138,10 +138,10 @@ function path3D() constructor
 			global.path3D_ret.z = A.z * Aw + B.z * Bw;
 			global.path3D_ret.A = A;
 			global.path3D_ret.B = B;
-			global.path3D_ret.C = undefined;
+			global.path3D_ret.C = A;
 			global.path3D_ret.Aw = Aw;
 			global.path3D_ret.Bw = Bw;
-			global.path3D_ret.Cw = undefined;
+			global.path3D_ret.Cw = 0;
 			return global.path3D_ret;
 		}
 	}
@@ -180,13 +180,13 @@ function path3D() constructor
 			//t should be a value between 0 and pathLength, NOT 0-1.
 			//This function will return -1 if t is too small and 1 if t is too large.
 			//If t falls in the range of this segment, it will process t so that the movement speed of a point following the path is constant
-			t = (t  - pos);
+			t -= pos;
 			if (t < 0){return -1;}
 			if (t > length){return 1;}
 			
 			//Make an educated guess for where the point ends up, then search for the correct index from there
 			var p = parent.precision;
-			var i = max(0, floor(t * (p - 1) / length));
+			var i = clamp(floor(t * p / length), 0, p - 1);
 			var p1 = curveMap[i];
 			var p2 = curveMap[i+1];
 			while (p1 > t)
@@ -197,12 +197,11 @@ function path3D() constructor
 			while (p2 < t)
 			{
 				p1 = p2;
-				p2 = curveMap[++i+1];
+				p2 = curveMap[++i + 1];
 			}
 			
 			//Remap the position to the new range, and find the new path position
-			t = (i + (t - p1) / (p2 - p1)) / p;
-			return getPosRaw(t);
+			return getPosRaw((i + (t - p1) / (p2 - p1)) / p);
 		}
 		
 		static update = function()
@@ -275,14 +274,14 @@ function path3D() constructor
 	static getPos = function(pathPos)
 	{
 		//This will find the point along the path that corresponds to the given pathPos, which should be in the range 0-1
-		pathPos = frac(pathPos);
 		if (!is_array(segments))
 		{
 			//Whenever settings are changed or points are moved, all preprocessed info gets wiped and needs to be created again
 			update();
 		}
-		var num = array_length(controlPoints);
-		var i = floor(pathPos * (num - 1));
+		pathPos = frac(pathPos);
+		var num = array_length(segments);
+		var i = clamp(floor(pathPos * num), 0, num - 1);
 		var t = pathPos * length;
 		repeat (num)
 		{
