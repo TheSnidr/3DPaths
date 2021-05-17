@@ -50,7 +50,7 @@ for (var i = 0; i < 16; i ++)
 }
 
 //Set the view matrix
-var xfrom = x - camMat[0] * 10 + camMat[8] * 8;
-var yfrom = y - camMat[1] * 10 + camMat[9] * 8;
-var zfrom = z - camMat[2] * 10 + camMat[10] * 8;
+var xfrom = x - camMat[0] * 40 + camMat[8] * 30;
+var yfrom = y - camMat[1] * 40 + camMat[9] * 30;
+var zfrom = z - camMat[2] * 40 + camMat[10] * 30;
 camera_set_view_mat(view_camera[0], matrix_build_lookat(xfrom, yfrom, zfrom, x + camMat[8] * 2, y + camMat[9] * 2, z + camMat[10] * 2, camMat[8], camMat[9], camMat[10]));

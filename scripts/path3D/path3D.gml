@@ -1,15 +1,9 @@
 //This struct is returned when doing path.getPos(pathPos)
 global.path3D_ret = 
 {
-	x: 0,
-	y: 0,
-	z: 0,
-	A: 0,
-	B: 0,
-	C: 0,
-	Aw: 0,
-	Bw: 0,
-	Cw: 0
+	x:  0, y:  0, z:  0,
+	A:  0, B:  0, C:  0,
+	Aw: 0, Bw: 0, Cw: 0
 };
 
 function path3D() constructor
@@ -17,18 +11,20 @@ function path3D() constructor
 	//Create a new 3D path resource.
 	//Script created by TheSnidr, 2021
 	//www.TheSnidr.com
+	//https://www.youtube.com/watch?v=Gfm1zTIp8BU
 	
 	smooth = true;
 	closed = true;
 	controlPoints = [];
+	precision = 20;
 	segments = -1;
 	length = 0;
-	precision = 20;
 	vbuff = -1;
 	
 	/// @func clear()
 	static clear = function()
 	{
+		//Clears the path of all control points
 		controlPoints = -1;
 		_clear_preprocessing();
 	}
@@ -36,6 +32,7 @@ function path3D() constructor
 	/// @func setSmooth(smooth)
 	static setSmooth = function(enable)
 	{
+		//Enables quadratic interpolation
 		smooth = enable;
 		_clear_preprocessing();
 	}
@@ -43,6 +40,7 @@ function path3D() constructor
 	/// @func setClosed(closed)
 	static setClosed = function(enable)
 	{
+		//Whether or not the path is joined at the ends
 		closed = enable;
 		_clear_preprocessing();
 	}
@@ -50,6 +48,7 @@ function path3D() constructor
 	/// @func setPrecision(precision)
 	static setPrecision = function(value)
 	{
+		//A higher precision means smoother curves at the cost of more processing. Default value is 20.
 		precision = value;
 		_clear_preprocessing();
 	}
@@ -57,42 +56,49 @@ function path3D() constructor
 	/// @func getSmooth()
 	static getSmooth = function()
 	{
+		//Returns whether the path is smoothened or not
 		return smooth;
 	}
 	
 	/// @func getClosed()
 	static getClosed = function()
 	{
+		//Returns whether the path is closed or not
 		return closed;
 	}
 	
 	/// @func getPrecision()
 	static getPrecision = function()
 	{
+		//Returns the path's precision value
 		return precision;
 	}
 	
 	/// @func getNumber()
 	static getNumber = function()
 	{
+		//Returns the number of control points
 		return array_length(controlPoints);
 	}
 	
 	/// @func getPathPoint(index)
 	static getPathPoint = function(index)
 	{
+		//Returns the path point with the given index
 		return controlPoints[index];
 	}
 	
 	/// @func addPoint(x, y, z)
 	static addPoint = function(x, y, z)
 	{
+		//Add a new path point to the path
 		static path3d_point = function(_x, _y, _z) constructor
 		{
 			parent = other;
 			
 			static move = function(_x, _y, _z)
 			{
+				//Lets you move the path point around
 				x = _x;
 				y = _y;
 				z = _z;
@@ -111,6 +117,7 @@ function path3D() constructor
 	/// @func line(A, B)
 	static line = function(_A, _B) constructor
 	{
+		//Constructor function for line segments. These are used when smooth is false
 		parent = other;
 		A = _A;
 		B = _B;
@@ -142,15 +149,16 @@ function path3D() constructor
 	/// @func curve(A, B, C)
 	static curve = function(_A, _B, _C) constructor
 	{
+		//Constructor function for curved segments. These are used when smooth is true
 		parent = other;
-		precision = parent.precision;
 		A = _A;
 		B = _B;
 		C = _C;
-		curveMap = array_create(precision + 1);
+		curveMap = array_create(parent.precision + 1);
 		
 		static getPosRaw = function(t)
 		{
+			//Returns an unprocessed quadratically interpolated point from a given value of t in the range 0-1
 			var tt = t * t;
 			var Aw = (.5 - t + tt * .5);
 			var Bw = (.5 + t - tt);
@@ -169,53 +177,53 @@ function path3D() constructor
 		
 		static getPos = function(t)
 		{
-			t = (t  - pos) / length;
+			//t should be a value between 0 and pathLength, NOT 0-1.
+			//This function will return -1 if t is too small and 1 if t is too large.
+			//If t falls in the range of this segment, it will process t so that the movement speed of a point following the path is constant
+			t = (t  - pos);
 			if (t < 0){return -1;}
-			if (t > 1){return 1;}
+			if (t > length){return 1;}
 			
 			//Make an educated guess for where the point ends up, then search for the correct index from there
-			var i = max(0, floor(t * (precision - 1)));
+			var p = parent.precision;
+			var i = max(0, floor(t * (p - 1) / length));
 			var p1 = curveMap[i];
 			var p2 = curveMap[i+1];
 			while (p1 > t)
 			{
-				--i;
 				p2 = p1;
-				p1 = curveMap[i];
+				p1 = curveMap[--i];
 			}
 			while (p2 < t)
 			{
-				++i;
 				p1 = p2;
-				p2 = curveMap[i+1];
+				p2 = curveMap[++i+1];
 			}
 			
 			//Remap the position to the new range, and find the new path position
-			t = (i + (t - p1) / (p2 - p1)) / precision;
+			t = (i + (t - p1) / (p2 - p1)) / p;
 			return getPosRaw(t);
 		}
 		
-		static updateCurveLength = function()
+		static update = function()
 		{
+			//This function will update the curve's curve length.
+			//It also updates the curveMap, which maps path position to actual distance travelled, for smoothening out the movement speed along the path
 			length = 0;
-			curveMap = array_create(precision + 1);
+			var p = parent.precision;
 			var pos = getPosRaw(0);
-			for (var i = 1; i <= precision; i ++)
+			for (var i = 1; i <= p; i ++)
 			{
-				px = pos.x;
-				py = pos.y;
-				pz = pos.z;
-				var pos = getPosRaw(i / precision);
+				var px = pos.x;
+				var py = pos.y;
+				var pz = pos.z;
+				var pos = getPosRaw(i / p);
 				length += point_distance_3d(pos.x, pos.y, pos.z, px, py, pz);
 				curveMap[i] = length;
 			}
-			for (var i = 1; i <= precision; i ++)
-			{
-				curveMap[i] /= length;
-			}
 		}
 		
-		updateCurveLength();
+		update();
 		pos = parent.length;
 		parent.length += length;
 	}
@@ -266,16 +274,19 @@ function path3D() constructor
 	/// @func getPos(pathPos)
 	static getPos = function(pathPos)
 	{
+		//This will find the point along the path that corresponds to the given pathPos, which should be in the range 0-1
 		pathPos = frac(pathPos);
 		if (!is_array(segments))
 		{
+			//Whenever settings are changed or points are moved, all preprocessed info gets wiped and needs to be created again
 			update();
 		}
 		var num = array_length(controlPoints);
 		var i = floor(pathPos * (num - 1));
+		var t = pathPos * length;
 		repeat (num)
 		{
-			var pos = segments[i].getPos(pathPos * length);
+			var pos = segments[i].getPos(t);
 			if (is_real(pos))
 			{
 				i += pos;
@@ -288,6 +299,7 @@ function path3D() constructor
 	/// @func draw()
 	static draw = function()
 	{
+		//A useful function for debugging. Draws the path as a linestrip. Also works in 3D.
 		if (vbuff == -1){_update_vbuff();}
 		vertex_submit(vbuff, pr_linestrip, -1);
 	}

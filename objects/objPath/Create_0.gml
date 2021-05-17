@@ -92,10 +92,10 @@ for (var i = 1; i <= num + 1; i ++)
 	matrix_orthonormalize_to(M);
 	
 	//Add vertices to the vertex buffer
-	var width = 4;
+	var width = 8;
 	var p1 = matrix_transform_vertex(M, 0, -width, 0);
 	var p2 = matrix_transform_vertex(M, 0, width, 0);
-	addVert(p1[0], p1[1], p1[2], 0, i);
-	addVert(p2[0], p2[1], p2[2], 1, i);
+	addVert(p1[0], p1[1], p1[2], 0, i / 2);
+	addVert(p2[0], p2[1], p2[2], 1, i / 2);
 }
 vertex_end(rollercoaster);

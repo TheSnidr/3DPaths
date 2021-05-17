@@ -1,7 +1,7 @@
 /// @description
 
 //Draw player
-matrix_set(matrix_world, matrix_multiply(matrix_build(0, 0, 0, 0, 0, 90, 3, 3, 3), mat));
+matrix_set(matrix_world, matrix_multiply(matrix_build(0, 0, 0, 0, 0, 90, 8, 8, 8), mat));
 vertex_submit(minecart, pr_trianglelist, sprite_get_texture(texMinecart, 0));
 matrix_set(matrix_world, matrix_build_identity());
 
