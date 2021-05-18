@@ -20,6 +20,7 @@ function path3D() constructor
 	segments = -1;
 	length = 0;
 	vbuff = -1;
+	segmentNum = 0;
 	
 	/// @func clear()
 	static clear = function()
@@ -133,16 +134,17 @@ function path3D() constructor
 			
 			var Aw = 1 - t;
 			var Bw = t;
-			global.path3D_ret.x = A.x * Aw + B.x * Bw;
-			global.path3D_ret.y = A.y * Aw + B.y * Bw;
-			global.path3D_ret.z = A.z * Aw + B.z * Bw;
-			global.path3D_ret.A = A;
-			global.path3D_ret.B = B;
-			global.path3D_ret.C = A;
-			global.path3D_ret.Aw = Aw;
-			global.path3D_ret.Bw = Bw;
-			global.path3D_ret.Cw = 0;
-			return global.path3D_ret;
+			var ret = global.path3D_ret;
+			ret.x = A.x * Aw + B.x * Bw;
+			ret.y = A.y * Aw + B.y * Bw;
+			ret.z = A.z * Aw + B.z * Bw;
+			ret.A = A;
+			ret.B = B;
+			ret.C = A;
+			ret.Aw = Aw;
+			ret.Bw = Bw;
+			ret.Cw = 0;
+			return ret;
 		}
 	}
 	
@@ -163,16 +165,17 @@ function path3D() constructor
 			var Aw = (.5 - t + tt * .5);
 			var Bw = (.5 + t - tt);
 			var Cw = tt * .5;
-			global.path3D_ret.x = A.x * Aw + B.x * Bw + C.x * Cw;
-			global.path3D_ret.y = A.y * Aw + B.y * Bw + C.y * Cw;
-			global.path3D_ret.z = A.z * Aw + B.z * Bw + C.z * Cw;
-			global.path3D_ret.A = A;
-			global.path3D_ret.B = B;
-			global.path3D_ret.C = C;
-			global.path3D_ret.Aw = Aw;
-			global.path3D_ret.Bw = Bw;
-			global.path3D_ret.Cw = Cw;
-			return global.path3D_ret;
+			var ret = global.path3D_ret;
+			ret.x = A.x * Aw + B.x * Bw + C.x * Cw;
+			ret.y = A.y * Aw + B.y * Bw + C.y * Cw;
+			ret.z = A.z * Aw + B.z * Bw + C.z * Cw;
+			ret.A = A;
+			ret.B = B;
+			ret.C = C;
+			ret.Aw = Aw;
+			ret.Bw = Bw;
+			ret.Cw = Cw;
+			return ret;
 		}
 		
 		static getPos = function(t)
@@ -278,12 +281,12 @@ function path3D() constructor
 		{
 			//Whenever settings are changed or points are moved, all preprocessed info gets wiped and needs to be created again
 			update();
+			segmentNum = array_length(segments);
 		}
-		pathPos = frac(pathPos);
-		var num = array_length(segments);
-		var i = clamp(floor(pathPos * num), 0, num - 1);
+		pathPos = (pathPos == 1) ? 1 : frac(pathPos);
+		var i = clamp(floor(pathPos * segmentNum), 0, segmentNum - 1);
 		var t = pathPos * length;
-		repeat (num)
+		repeat (segmentNum)
 		{
 			var pos = segments[i].getPos(t);
 			if (is_real(pos))
@@ -357,6 +360,10 @@ function path3D() constructor
 	static _clear_preprocessing = function()
 	{
 		segments = -1;
+		if (vbuff >= 0)
+		{
+			vertex_delete_buffer(vbuff);
+		}
 		vbuff = -1;
 	}
 }

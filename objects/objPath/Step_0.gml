@@ -2,7 +2,7 @@
 
 //Move along the path
 pathPos += spd;
-var pos = path.getPos(pathPos);
+var pos = path.getPos(pathPos / path.length);
 
 //Find a vector pointing from the previous position to the new
 var dx = pos.x - x;
@@ -11,7 +11,7 @@ var dz = pos.z - z;
 
 //Make the path speed change depending on steepness of the path. The steeper it is, the faster it accelerates
 var l = sqrt(dx * dx + dy * dy + dz * dz);
-spd = max(minSpd, spd * .99 - min(0., .00004 * dz / l));
+spd = max(minSpd, spd * .99 - min(0., .07 * dz / l));
 
 //Update the player's position
 x = pos.x;

@@ -50,7 +50,7 @@ z = pos.z;
 mat = matrix_build(x, y, z, 0, 0, 0, 1, 1, 1);
 camMat = matrix_build(x, y, z, 0, 0, 0, 1, 1, 1);
 spd = 0;
-minSpd = .0004;
+minSpd = .5;
 
 //Create a function for more easily adding vertices to the rollercoaster
 var addVert = function(x, y, z, u, v)
