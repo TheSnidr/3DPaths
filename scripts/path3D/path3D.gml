@@ -1,6 +1,6 @@
-//This struct is returned when doing path.getPos(pathPos)
 global.path3D_ret = 
 {
+	//This struct is returned when doing path.getPos(pathPos)
 	x:  0, y:  0, z:  0,
 	A:  0, B:  0, C:  0,
 	Aw: 0, Bw: 0, Cw: 0
@@ -8,19 +8,27 @@ global.path3D_ret =
 
 function path3D() constructor
 {
-	//Create a new 3D path resource.
-	//Script created by TheSnidr, 2021
-	//www.TheSnidr.com
-	//https://www.youtube.com/watch?v=Gfm1zTIp8BU
+	/*
+		Create a new 3D path resource.
+		This script was created for a youtube video, and has since been cleaned up and optimized further.
+		YouTube link: https://www.youtube.com/watch?v=Gfm1zTIp8BU
+		
+		When smooth is enabled, it uses quadratic interpolation, like the built-in path system in GM.
+		It also has a system for counteracting the weird speed changes that often appear along the
+		path when doing quadratic interpolation.
+		
+		Script created by TheSnidr, 2021
+		www.TheSnidr.com
+	*/
 	
 	smooth = true;
 	closed = true;
 	controlPoints = [];
 	precision = 20;
 	segments = -1;
+	segmentNum = 0;
 	length = 0;
 	vbuff = -1;
-	segmentNum = 0;
 	
 	/// @func clear()
 	static clear = function()
@@ -120,20 +128,15 @@ function path3D() constructor
 	{
 		//Constructor function for line segments. These are used when smooth is false
 		parent = other;
+		pos = 0;
 		A = _A;
 		B = _B;
 		length = point_distance_3d(A.x, A.y, A.z, B.x, B.y, B.z);
-		pos = parent.length;
-		parent.length += length;
 		
 		static getPos = function(t)
 		{
-			t = (t - pos) / length;
-			if (t < 0){return -1;}
-			if (t > 1){return 1;}
-			
-			var Aw = 1 - t;
-			var Bw = t;
+			var Bw = t / length;
+			var Aw = 1 - Bw;
 			var ret = global.path3D_ret;
 			ret.x = A.x * Aw + B.x * Bw;
 			ret.y = A.y * Aw + B.y * Bw;
@@ -153,9 +156,11 @@ function path3D() constructor
 	{
 		//Constructor function for curved segments. These are used when smooth is true
 		parent = other;
+		pos = 0;
 		A = _A;
 		B = _B;
 		C = _C;
+		length = 0;
 		curveMap = array_create(parent.precision + 1);
 		
 		static getPosRaw = function(t)
@@ -180,18 +185,23 @@ function path3D() constructor
 		
 		static getPos = function(t)
 		{
-			//t should be a value between 0 and pathLength, NOT 0-1.
-			//This function will return -1 if t is too small and 1 if t is too large.
-			//If t falls in the range of this segment, it will process t so that the movement speed of a point following the path is constant
-			t -= pos;
-			if (t < 0){return -1;}
-			if (t > length){return 1;}
-			
-			//Make an educated guess for where the point ends up, then search for the correct index from there
+			/*
+				t should be a value between 0 and curveLength, NOT 0-1.
+				
+				This function will counteract the weird changes in speed when following a path with quadratic interpolation.
+				When the curve is created, it also maps the path position to the actual distance travelled along the curve.
+				We can then use this map to search for the best fitting part of the curve for a given path position, so that a point
+				following the path will move at a constant speed throughout. This is just an approximation, but it's a pretty good 
+				approximation, and at a precision of 20 the changes in speed are not perceptible.
+			*/
 			var p = parent.precision;
+			
+			//Make an initial guess for the first curveMap position
 			var i = clamp(floor(t * p / length), 0, p - 1);
 			var p1 = curveMap[i];
 			var p2 = curveMap[i+1];
+			
+			//Search for the best fitting curveMap position, so that p1 is less or equal to t and p2 is larger or equal to t
 			while (p1 > t)
 			{
 				p2 = p1;
@@ -203,8 +213,11 @@ function path3D() constructor
 				p2 = curveMap[++i + 1];
 			}
 			
-			//Remap the position to the new range, and find the new path position
-			return getPosRaw((i + (t - p1) / (p2 - p1)) / p);
+			//Remap t to the new semi-uniform range
+			t = (i + (t - p1) / (p2 - p1)) / p;
+			
+			//Find the quadratically interpolated point
+			return getPosRaw(t);
 		}
 		
 		static update = function()
@@ -225,51 +238,56 @@ function path3D() constructor
 			}
 		}
 		
+		//Update the curve as soon as it is created
 		update();
-		pos = parent.length;
-		parent.length += length;
 	}
 	
 	/// @func update()
 	static update = function()
 	{
-		var num = array_length(controlPoints);
-		if (!smooth && !closed){--num;}
-		segments = array_create(num);
+		segmentNum = array_length(controlPoints);
+		if (!smooth && !closed){--segmentNum;}
+		segments = array_create(segmentNum);
 		length = 0;
 		
-		for (var i = 0; i < num; i ++)
+		var A, B, C, S;
+		for (var i = 0; i < segmentNum; i ++)
 		{
 			if (smooth)
 			{
 				if (closed)
 				{
-					var A = controlPoints[i];
-					var B = controlPoints[(i + 1) % num];
-					var C = controlPoints[(i + 2) % num];
+					//When closed, the first segment actually starts at the midpoint between the first and second points.
+					A = controlPoints[i];
+					B = controlPoints[(i + 1) % segmentNum];
+					C = controlPoints[(i + 2) % segmentNum];
 				}
 				else
 				{
-					var A = controlPoints[max(i - 1, 0)];
-					var B = controlPoints[i];
-					var C = controlPoints[min(i + 1, num - 1)];
+					//When open, the first segment will reference the first point twice, resulting in a straight line. The last segment will reference the last point twice.
+					A = controlPoints[max(i - 1, 0)];
+					B = controlPoints[i];
+					C = controlPoints[min(i + 1, segmentNum - 1)];
 				}
-				segments[@ i] = new curve(A, B, C);
+				S = new curve(A, B, C);
 			}
 			else
 			{
 				if (closed)
 				{
-					var A = controlPoints[i];
-					var B = controlPoints[(i + 1) % num];
+					A = controlPoints[i];
+					B = controlPoints[(i + 1) % segmentNum];
 				}
 				else
 				{
-					var A = controlPoints[i];
-					var B = controlPoints[min(i + 1, num)];
+					A = controlPoints[i];
+					B = controlPoints[i + 1];
 				}
-				segments[@ i] = new line(A, B);
+				S = new line(A, B);
 			}
+			S.pos = length;
+			length += S.length;
+			segments[@ i] = S;
 		}
 	}
 	
@@ -281,20 +299,36 @@ function path3D() constructor
 		{
 			//Whenever settings are changed or points are moved, all preprocessed info gets wiped and needs to be created again
 			update();
-			segmentNum = array_length(segments);
 		}
-		pathPos = (pathPos == 1) ? 1 : frac(pathPos);
-		var i = clamp(floor(pathPos * segmentNum), 0, segmentNum - 1);
+		
+		//Modify the pathPos so that it's always in the range 0-1
+		if (pathPos != 1){pathPos -= floor(pathPos);}
 		var t = pathPos * length;
+		
+		//Make an initial guess for the segment index
+		var i = clamp(floor(pathPos * segmentNum), 0, segmentNum - 1);
+		
+		//Start a loop for searching for the correct segment. Worst case scenario we'll end up looping segmentNum times, but that's very unlikely.
 		repeat (segmentNum)
 		{
-			var pos = segments[i].getPos(t);
-			if (is_real(pos))
+			var S = segments[i];
+			
+			//Search for the correct segment from the initial first guess
+			if (t < S.pos)
 			{
-				i += pos;
+				//t is too low. Reduce i by one and try again
+				--i;
 				continue;
 			}
-			return pos;
+			if (t > S.pos + S.length)
+			{
+				//t is too high. Increase i by one and try again
+				++i;
+				continue;
+			}
+			
+			//We've found the correct segment. Get the interpolated position from it.
+			return S.getPos(t - S.pos);
 		}
 	}
 	
@@ -318,6 +352,13 @@ function path3D() constructor
 			vertex_format_add_colour();
 			return vertex_format_end();
 		}
+		static addVert = function(x, y, z)
+		{
+			vertex_position_3d(vbuff, x, y, z);
+			vertex_normal(vbuff, 0, 0, 0);
+			vertex_texcoord(vbuff, 0, 0);
+			vertex_colour(vbuff, c_white, 1);
+		}
 		static format = createFormat();
 		
 		if (vbuff >= 0)
@@ -333,10 +374,7 @@ function path3D() constructor
 			for (var i = 0; i <= num; i ++)
 			{
 				var pos = getPos(i / num);
-				vertex_position_3d(vbuff, pos.x, pos.y, pos.z);
-				vertex_normal(vbuff, 0, 0, 0);
-				vertex_texcoord(vbuff, 0, 0);
-				vertex_colour(vbuff, c_white, 1);
+				addVert(pos.x, pos.y, pos.z);
 			}
 		}
 		else
@@ -345,10 +383,7 @@ function path3D() constructor
 			for (var i = 0; i < num + closed; i ++)
 			{
 				var A = controlPoints[i % num];
-				vertex_position_3d(vbuff, A.x, A.y, A.z);
-				vertex_normal(vbuff, 0, 0, 0);
-				vertex_texcoord(vbuff, 0, 0);
-				vertex_colour(vbuff, c_white, 1);
+				addVert(A.x, A.y, A.z);
 			}
 		}
 		
@@ -359,6 +394,7 @@ function path3D() constructor
 	/// @func _clear_preprocessing()
 	static _clear_preprocessing = function()
 	{
+		//This function clears all precalculated info from the path. The info will be recreated the next time the path is sampled.
 		segments = -1;
 		if (vbuff >= 0)
 		{
