@@ -40,6 +40,8 @@ camera_set_proj_mat(view_camera[0], matrix_build_projection_perspective_fov(-80,
 gpu_set_ztestenable(true);
 gpu_set_zwriteenable(true);
 gpu_set_texrepeat(true);
+gpu_set_alphatestenable(true);
+gpu_set_alphatestref(1);
 
 //Some player settings
 pathPos = 0;
