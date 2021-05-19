@@ -70,7 +70,7 @@ vertex_format_add_colour();
 format = vertex_format_end();
 rollercoaster = vertex_create_buffer();
 vertex_begin(rollercoaster, format);
-var num = path.getPrecision() * path.getNumber();
+var num = floor(path.length / 8);
 var pos = path.getPos(0);
 var M = matrix_build(0, 0, 0, 0, 0, 0, 1, 1, 1);
 for (var i = 1; i <= num + 1; i ++)

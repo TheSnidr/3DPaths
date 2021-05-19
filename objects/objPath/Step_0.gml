@@ -11,7 +11,7 @@ var dz = pos.z - z;
 
 //Make the path speed change depending on steepness of the path. The steeper it is, the faster it accelerates
 var l = sqrt(dx * dx + dy * dy + dz * dz);
-spd = max(minSpd, spd * .99 - min(0., .07 * dz / l));
+spd = max(minSpd, spd * .99 - min(0., .08 * dz / l));
 
 //Update the player's position
 x = pos.x;
@@ -22,9 +22,9 @@ mat[13] = y;
 mat[14] = z;
 
 //Update the player's looking direction
-mat[0] += dx * .5;
-mat[1] += dy * .5;
-mat[2] += dz * .5;
+mat[0] = dx;
+mat[1] = dy;
+mat[2] = dz;
 
 //Update the player's up direction based on the custom vector that we created when adding points to the path
 var A = pos.A;
@@ -36,9 +36,9 @@ var Cw = pos.Cw;
 var xup = A.xup * Aw + B.xup * Bw + C.xup * Cw;
 var yup = A.yup * Aw + B.yup * Bw + C.yup * Cw;
 var zup = A.zup * Aw + B.zup * Bw + C.zup * Cw;
-mat[8]  += xup * .5;
-mat[9]  += yup * .5;
-mat[10] += zup * .5;
+mat[8]  = xup;
+mat[9]  = yup;
+mat[10] = zup;
 
 //Orthonormalize the final matrix
 matrix_orthonormalize_to(mat);
@@ -46,7 +46,7 @@ matrix_orthonormalize_to(mat);
 //Make the camera's matrix lag slightly behind the player's matrix
 for (var i = 0; i < 16; i ++)
 {
-	camMat[i] = lerp(camMat[i], mat[i], .2);
+	camMat[i] = lerp(camMat[i], mat[i], .03);
 }
 
 //Set the view matrix

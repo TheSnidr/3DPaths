@@ -14,8 +14,8 @@ function path3D() constructor
 		YouTube link: https://www.youtube.com/watch?v=Gfm1zTIp8BU
 		
 		When smooth is enabled, it uses quadratic interpolation, like the built-in path system in GM.
-		It also has a system for counteracting the weird speed changes that often appear along the
-		path when doing quadratic interpolation.
+		It also has a system for counteracting the weird speed changes that often appear along the path 
+		when doing quadratic interpolation.
 		
 		Script created by TheSnidr, 2021
 		www.TheSnidr.com
@@ -163,12 +163,15 @@ function path3D() constructor
 		length = 0;
 		curveMap = array_create(parent.precision + 1);
 		
-		static getPosRaw = function(t)
+		static quadraticInterpolation = function(t)
 		{
-			//Returns an unprocessed quadratically interpolated point from a given value of t in the range 0-1
+			/*
+				Returns an unprocessed quadratically interpolated point from a given value of t in the range 0-1.
+				Interpolates from the midpoint between A and B to the midpoint between B and C
+			*/
 			var tt = t * t;
-			var Aw = (.5 - t + tt * .5);
-			var Bw = (.5 + t - tt);
+			var Aw = .5 - t + tt * .5;
+			var Bw = .5 + t - tt;
 			var Cw = tt * .5;
 			var ret = global.path3D_ret;
 			ret.x = A.x * Aw + B.x * Bw + C.x * Cw;
@@ -217,7 +220,7 @@ function path3D() constructor
 			t = (i + (t - p1) / (p2 - p1)) / p;
 			
 			//Find the quadratically interpolated point
-			return getPosRaw(t);
+			return quadraticInterpolation(t);
 		}
 		
 		static update = function()
@@ -226,13 +229,13 @@ function path3D() constructor
 			//It also updates the curveMap, which maps path position to actual distance travelled, for smoothening out the movement speed along the path
 			length = 0;
 			var p = parent.precision;
-			var pos = getPosRaw(0);
+			var pos = quadraticInterpolation(0);
 			for (var i = 1; i <= p; i ++)
 			{
 				var px = pos.x;
 				var py = pos.y;
 				var pz = pos.z;
-				var pos = getPosRaw(i / p);
+				var pos = quadraticInterpolation(i / p);
 				length += point_distance_3d(pos.x, pos.y, pos.z, px, py, pz);
 				curveMap[i] = length;
 			}
@@ -245,12 +248,16 @@ function path3D() constructor
 	/// @func update()
 	static update = function()
 	{
+		/*
+			This function will assemble the path as an array of segments.
+			The segments will be either curves (for smooth paths) or lines (for straight paths).
+			The segments update their own lengths in their constructor functions.
+		*/
+		var A, B, C, S;
+		length = 0;
 		segmentNum = array_length(controlPoints);
 		if (!smooth && !closed){--segmentNum;}
 		segments = array_create(segmentNum);
-		length = 0;
-		
-		var A, B, C, S;
 		for (var i = 0; i < segmentNum; i ++)
 		{
 			if (smooth)
@@ -269,6 +276,7 @@ function path3D() constructor
 					B = controlPoints[i];
 					C = controlPoints[min(i + 1, segmentNum - 1)];
 				}
+				//When the path is smooth, the segments will do quadratic interpolation across three control points
 				S = new curve(A, B, C);
 			}
 			else
@@ -283,6 +291,7 @@ function path3D() constructor
 					A = controlPoints[i];
 					B = controlPoints[i + 1];
 				}
+				//When the path is not smooth, the segments will do linear interpolation along two control points
 				S = new line(A, B);
 			}
 			S.pos = length;
@@ -302,7 +311,7 @@ function path3D() constructor
 		}
 		
 		//Modify the pathPos so that it's always in the range 0-1
-		if (pathPos != 1){pathPos -= floor(pathPos);}
+		if (closed || pathPos != 1){pathPos -= floor(pathPos);}
 		var t = pathPos * length;
 		
 		//Make an initial guess for the segment index
@@ -343,6 +352,7 @@ function path3D() constructor
 	/// @func _update_vbuff()
 	static _update_vbuff = function()
 	{
+		//Create a basic format that works without the need for custom shaders
 		static createFormat = function()
 		{
 			vertex_format_begin();
@@ -352,6 +362,8 @@ function path3D() constructor
 			vertex_format_add_colour();
 			return vertex_format_end();
 		}
+		
+		//Simple function for adding vertices to vbuff
 		static addVert = function(x, y, z)
 		{
 			vertex_position_3d(vbuff, x, y, z);
@@ -359,10 +371,13 @@ function path3D() constructor
 			vertex_texcoord(vbuff, 0, 0);
 			vertex_colour(vbuff, c_white, 1);
 		}
+		
+		//Create the format as a static variable to avoid memory leaks
 		static format = createFormat();
 		
 		if (vbuff >= 0)
 		{
+			//Delete the vbuff if it already exists
 			vertex_delete_buffer(vbuff);
 		}
 		vbuff = vertex_create_buffer();
